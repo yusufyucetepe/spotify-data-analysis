@@ -29,3 +29,24 @@ class SpotifyDataCollector:
             })
         
         return artists
+    
+def get_top_tracks(self, time_range='medium_term', limit=50):
+        """
+        Get user's top tracks
+        
+        Returns:
+            list of dicts with track info
+        """
+        results = self.sp.current_user_top_tracks(time_range=time_range, limit=limit)
+        
+        tracks = []
+        for item in results['items']:
+            tracks.append({
+                'id': item['id'],
+                'name': item['name'],
+                'artist': item['artists'][0]['name'],
+                'album': item['album']['name'],
+                'popularity': item['popularity']
+            })
+        
+        return tracks
