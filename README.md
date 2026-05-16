@@ -43,4 +43,10 @@ SPOTIPY_REDIRECT_URI=http://localhost:8888/callback
 python main.py
 ```
  
-On first run, your browser will open for Spotify authentication. Click **Agree** and you're done!
+ **First-time authentication:**
+1. Your browser will open automatically
+2. Click **Agree** to authorize the app
+3. You'll be redirected to `http://localhost:8888/callback?code=...`
+4. **The page will show "connection refused" - this is normal!**
+5. Copy the entire URL from your browser and paste it in the terminal
+6. Future runs will use cached credentials (no need to re-authorize)
