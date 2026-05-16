@@ -44,7 +44,7 @@ python main.py
 ```
  
  **First-time authentication:**
-1. Your browser will open automatically
+1. Enter the URL instructed to your browser
 2. Click **Agree** to authorize the app
 3. You'll be redirected to `http://localhost:8888/callback?code=...`
 4. **The page will show "connection refused" - this is normal!**
