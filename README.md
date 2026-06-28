@@ -1,52 +1,83 @@
-# 🎵 Spotify Mood Analysis
- 
-Analyze your Spotify listening habits and visualize your musical moods over time with a beautiful GitHub-style activity calendar.
- 
-![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
-![Spotify](https://img.shields.io/badge/spotify-API-green.svg)
+# Spotify Analyzer API
 
-## ✨ Features
- 
-- **Top Artists & Genres** - See who you've been listening to most
-- **Mood Detection** - Automatically classify tracks as happy, sad, energetic, calm, etc.
-- **Visual Calendar** - GitHub-style heatmap showing your daily musical moods
-- **Color-Coded** - Blue for sad days, yellow for joyful ones, and more
+A REST API that connects to your Spotify account and exposes your listening data — top tracks, top artists, and mood analysis based on audio features.
 
-## 🚀 Quick Start
- 
-### 1. Install Dependencies
- 
+Built with FastAPI, PostgreSQL, and the Spotify Web API.
+
+---
+
+## Stack
+
+- **FastAPI** — API framework
+- **PostgreSQL** — user and token storage
+- **Spotipy** — Spotify Web API client
+- **SQLAlchemy** (async) — ORM
+- **JWT** — session tokens
+
+---
+
+## Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/auth/login` | Redirects to Spotify OAuth |
+| `GET` | `/auth/callback` | Handles OAuth callback, returns JWT |
+| `GET` | `/auth/me` | Returns the current user's profile |
+| `GET` | `/tracks/top` | Your top tracks (`time_range`, `limit`) |
+| `GET` | `/tracks/recently-played` | Your recently played tracks (`limit`) |
+| `GET` | `/artists/top` | Your top artists (`time_range`, `limit`) |
+| `GET` | `/moods/summary` | Mood distribution of your recent listening |
+| `GET` | `/moods/daily` | Per-day mood breakdown |
+
+All endpoints except `/auth/*` require a `Bearer` token in the `Authorization` header.
+
+> **Note:** `/moods/*` endpoints require the Spotify `audio_features` API, which is restricted for apps created after November 2024. These endpoints will return a `503` if your app does not have access.
+
+---
+
+## Getting Started
+
+### 1. Clone and install dependencies
+
 ```bash
+git clone <repo-url>
+cd spotify-data-analysis
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
- 
-### 2. Get Spotify API Credentials
- 
-1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-2. Click **Create an App**
-3. Copy your **Client ID** and **Client Secret**
-4. Edit Settings → Add `http://localhost:8888/callback` to Redirect URIs
 
-### 3. Configure Your App
- 
+### 2. Create a Spotify app
+
+1. Go to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+2. Create a new app
+3. Add `http://127.0.0.1:8000/auth/callback` as a Redirect URI
+
+### 3. Configure environment variables
+
 Create a `.env` file in the project root:
- 
+
 ```env
-SPOTIPY_CLIENT_ID=your_client_id_here
-SPOTIPY_CLIENT_SECRET=your_client_secret_here
-SPOTIPY_REDIRECT_URI=http://localhost:8888/callback
+SPOTIPY_CLIENT_ID=your_client_id
+SPOTIPY_CLIENT_SECRET=your_client_secret
+SPOTIPY_REDIRECT_URI=http://127.0.0.1:8000/auth/callback
+SECRET_KEY=your_secret_key
+DATABASE_URL=postgresql+asyncpg://user:password@localhost/spotify_analyzer
 ```
- 
-### 4. Run the Analysis
- 
+
+### 4. Run the server
+
 ```bash
-python main.py
+uvicorn app.main:app --reload
 ```
- 
- **First-time authentication:**
-1. Enter the URL instructed to your browser
-2. Click **Agree** to authorize the app
-3. You'll be redirected to `http://localhost:8888/callback?code=...`
-4. **The page will show "connection refused" - this is normal!**
-5. Copy the entire URL from your browser and paste it in the terminal
-6. Future runs will use cached credentials (no need to re-authorize)
+
+The interactive API docs are available at `http://127.0.0.1:8000/docs`.
+
+---
+
+## Authentication Flow
+
+1. Visit `/auth/login` — you will be redirected to Spotify
+2. Authorize the app
+3. You will be redirected back to `/auth/callback` with a JWT
+4. Use the JWT as a `Bearer` token on all subsequent requests
