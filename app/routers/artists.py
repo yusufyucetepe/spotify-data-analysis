@@ -2,12 +2,13 @@ import spotipy
 from fastapi import APIRouter, Depends
 
 from app.dependencies import get_spotify_client
+from app.schemas import Artist
 from app.services.data_collector import SpotifyDataCollector
 
 router = APIRouter()
 
 
-@router.get("/top")
+@router.get("/top", response_model=list[Artist])
 async def get_top_artists(
     time_range: str = "medium_term",
     limit: int = 20,
@@ -15,15 +16,3 @@ async def get_top_artists(
 ):
     collector = SpotifyDataCollector(sp)
     return collector.get_top_artists(time_range=time_range, limit=limit)
-
-
-@router.get("/genres")
-async def get_genre_distribution(
-    time_range: str = "medium_term",
-    sp: spotipy.Spotify = Depends(get_spotify_client),
-):
-    collector = SpotifyDataCollector(sp)
-    genres = collector.get_genre_distribution(time_range=time_range)
-    if not genres:
-        return {"detail": "Spotify did not return genre data for your top artists. This is a known limitation of the Spotify API for some accounts."}
-    return genres
