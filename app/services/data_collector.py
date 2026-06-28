@@ -31,7 +31,7 @@ class SpotifyDataCollector:
                 'name': item['name'],
                 'artist': item['artists'][0]['name'],
                 'album': item['album']['name'],
-                'popularity': item['popularity']
+                'popularity': item.get('popularity'),
             })
 
         return tracks
