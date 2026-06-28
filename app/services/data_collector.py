@@ -11,12 +11,12 @@ class SpotifyDataCollector:
         results = self.sp.current_user_top_artists(time_range=time_range, limit=limit)
 
         artists = []
-        for item in results['items']:
+        for item in results.get('items', []):
             artists.append({
-                'name': item['name'],
-                'genres': item['genres'],
-                'popularity': item['popularity'],
-                'followers': item['followers']['total']
+                'name': item.get('name'),
+                'genres': item.get('genres') or [],
+                'popularity': item.get('popularity'),
+                'followers': (item.get('followers') or {}).get('total'),
             })
 
         return artists
@@ -26,11 +26,12 @@ class SpotifyDataCollector:
 
         tracks = []
         for item in results['items']:
+            artists = item.get('artists') or []
             tracks.append({
-                'id': item['id'],
-                'name': item['name'],
-                'artist': item['artists'][0]['name'],
-                'album': item['album']['name'],
+                'id': item.get('id'),
+                'name': item.get('name'),
+                'artist': artists[0]['name'] if artists else None,
+                'album': (item.get('album') or {}).get('name'),
                 'popularity': item.get('popularity'),
             })
 
@@ -41,13 +42,15 @@ class SpotifyDataCollector:
 
         all_tracks = []
         for item in results['items']:
-            track = item['track']
+            track = item.get('track') or {}
+            artists = track.get('artists') or []
+            played_at = item.get('played_at', '')
             all_tracks.append({
-                'track_id': track['id'],
-                'track_name': track['name'],
-                'artist': track['artists'][0]['name'],
-                'played_at': item['played_at'],
-                'timestamp': datetime.fromisoformat(item['played_at'].replace('Z', '+00:00'))
+                'track_id': track.get('id'),
+                'track_name': track.get('name'),
+                'artist': artists[0]['name'] if artists else None,
+                'played_at': played_at,
+                'timestamp': datetime.fromisoformat(played_at.replace('Z', '+00:00')) if played_at else None,
             })
 
         return pd.DataFrame(all_tracks)

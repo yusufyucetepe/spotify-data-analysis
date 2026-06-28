@@ -23,4 +23,7 @@ async def get_genre_distribution(
     sp: spotipy.Spotify = Depends(get_spotify_client),
 ):
     collector = SpotifyDataCollector(sp)
-    return collector.get_genre_distribution(time_range=time_range)
+    genres = collector.get_genre_distribution(time_range=time_range)
+    if not genres:
+        return {"detail": "Spotify did not return genre data for your top artists. This is a known limitation of the Spotify API for some accounts."}
+    return genres
