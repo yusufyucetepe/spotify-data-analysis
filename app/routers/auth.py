@@ -1,30 +1,37 @@
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import RedirectResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+import secrets
 from datetime import datetime, timedelta, timezone
 
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse, RedirectResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.auth import (
+    create_jwt,
+    exchange_code_for_tokens,
+    get_spotify_auth_url,
+    get_spotify_profile,
+)
 from app.db import get_db
 from app.models.user import User
-from app.auth import (
-    get_spotify_auth_url,
-    exchange_code_for_tokens,
-    get_spotify_profile,
-    create_jwt,
-)
 
 router = APIRouter()
 
 
 @router.get("/login")
 async def login():
-    """Redirect the user to Spotify's authorization page."""
-    return RedirectResponse(url=get_spotify_auth_url())
+    state = secrets.token_urlsafe(32)
+    response = RedirectResponse(url=get_spotify_auth_url(state))
+    response.set_cookie("oauth_state", state, max_age=300, httponly=True, samesite="lax")
+    return response
 
 
 @router.get("/callback")
-async def callback(code: str, db: AsyncSession = Depends(get_db)):
-    """Spotify redirects here after the user grants access."""
+async def callback(code: str, state: str, request: Request, db: AsyncSession = Depends(get_db)):
+    stored_state = request.cookies.get("oauth_state")
+    if not stored_state or stored_state != state:
+        raise HTTPException(status_code=400, detail="Invalid OAuth state — possible CSRF attempt")
+
     try:
         tokens = await exchange_code_for_tokens(code)
     except Exception:
@@ -64,15 +71,16 @@ async def callback(code: str, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
     jwt_token = create_jwt(spotify_id)
-    return {
+    response = JSONResponse(content={
         "access_token": jwt_token,
         "token_type": "bearer",
         "user": profile.get("display_name"),
         "spotify_id": spotify_id,
-    }
+    })
+    response.delete_cookie("oauth_state")
+    return response
 
 
 @router.get("/me")
 async def me(db: AsyncSession = Depends(get_db)):
-    """Health check placeholder — secured routes use get_current_user dependency."""
     return {"message": "Use the Bearer token from /auth/callback on secured endpoints"}

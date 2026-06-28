@@ -18,12 +18,13 @@ SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
 SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
 
 
-def get_spotify_auth_url() -> str:
+def get_spotify_auth_url(state: str) -> str:
     params = "&".join([
         f"client_id={CLIENT_ID}",
         "response_type=code",
         f"redirect_uri={REDIRECT_URI}",
         f"scope={SPOTIFY_SCOPE.replace(' ', '%20')}",
+        f"state={state}",
     ])
     return f"{SPOTIFY_AUTH_URL}?{params}"
 

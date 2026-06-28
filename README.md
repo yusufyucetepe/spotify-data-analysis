@@ -1,6 +1,6 @@
 # Spotify Analyzer API
 
-A REST API that connects to your Spotify account and exposes your listening data — top tracks, top artists, and mood analysis based on audio features.
+A REST API that connects to your Spotify account and exposes your listening data — top tracks, top artists, and listening history. Mood analysis endpoints are included but require Spotify extended API access (restricted for apps created after November 2024).
 
 Built with FastAPI, PostgreSQL, and the Spotify Web API.
 
