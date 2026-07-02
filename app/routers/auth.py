@@ -1,3 +1,4 @@
+import os
 import secrets
 from datetime import datetime, timedelta, timezone
 
@@ -8,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import (
     create_jwt,
+    encrypt_token,
     exchange_code_for_tokens,
     get_spotify_auth_url,
     get_spotify_profile,
@@ -22,7 +24,8 @@ router = APIRouter()
 async def login():
     state = secrets.token_urlsafe(32)
     response = RedirectResponse(url=get_spotify_auth_url(state))
-    response.set_cookie("oauth_state", state, max_age=300, httponly=True, samesite="lax")
+    _secure = os.getenv("SECURE_COOKIES", "true").lower() != "false"
+    response.set_cookie("oauth_state", state, max_age=300, httponly=True, samesite="lax", secure=_secure)
     return response
 
 
@@ -52,8 +55,8 @@ async def callback(code: str, state: str, request: Request, db: AsyncSession = D
     user = result.scalar_one_or_none()
 
     if user:
-        user.access_token = access_token
-        user.refresh_token = refresh_token
+        user.access_token = encrypt_token(access_token)
+        user.refresh_token = encrypt_token(refresh_token)
         user.token_expires_at = token_expires_at
         user.display_name = profile.get("display_name")
         user.email = profile.get("email")
@@ -62,8 +65,8 @@ async def callback(code: str, state: str, request: Request, db: AsyncSession = D
             spotify_id=spotify_id,
             display_name=profile.get("display_name"),
             email=profile.get("email"),
-            access_token=access_token,
-            refresh_token=refresh_token,
+            access_token=encrypt_token(access_token),
+            refresh_token=encrypt_token(refresh_token),
             token_expires_at=token_expires_at,
         )
         db.add(user)

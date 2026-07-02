@@ -6,7 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import decode_jwt, refresh_spotify_token
+from app.auth import decode_jwt, decrypt_token, encrypt_token, refresh_spotify_token
 from app.db import get_db
 from app.models.user import User
 
@@ -44,16 +44,16 @@ async def get_spotify_client(
     db: AsyncSession = Depends(get_db),
 ) -> spotipy.Spotify:
     now = datetime.now(timezone.utc)
-    access_token = user.access_token
+    access_token = decrypt_token(user.access_token)
 
     if user.token_expires_at <= now:
-        token_data = await refresh_spotify_token(user.refresh_token)
+        token_data = await refresh_spotify_token(decrypt_token(user.refresh_token))
         access_token = token_data["access_token"]
         new_expiry = now + timedelta(seconds=token_data["expires_in"])
         await db.execute(
             update(User)
             .where(User.spotify_id == user.spotify_id)
-            .values(access_token=access_token, token_expires_at=new_expiry)
+            .values(access_token=encrypt_token(access_token), token_expires_at=new_expiry)
         )
         await db.commit()
 
